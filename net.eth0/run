@@ -1,0 +1,37 @@
+#!/usr/bin/env python
+
+import logging
+import os
+import sys
+from time import sleep
+
+# import external library
+sys.path.append('/var/service')
+from runit_helper import get_logger
+
+interface_name = 'eth0'
+service_name = 'net.%s' % interface_name
+
+log = get_logger(service_name, logging.INFO)
+log.info('starting..')
+
+while True:
+    state_file = '/sys/class/net/%s/carrier' % interface_name
+    if not os.path.exists(state_file):
+        log.error('interface %s does not exists' % interface_name)
+	exit(1)
+
+    with open(state_file) as f:
+        down = False
+        try:
+            if int(f.readline()) < 1:  down = True
+        except IOError:
+            down = True
+        if down:
+            os.system('/etc/init.d/net.%s start' % interface_name)
+            log.warn('interface %s is down' % inteface_name)
+            exit(0)
+
+    sleep(10)
+
+log.info('stopped')

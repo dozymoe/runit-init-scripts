@@ -1,0 +1,14 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+# import external library
+sys.path.append('/var/service')
+from runit_helper import run
+
+service_name = 'monit'
+log_path = '/var/log/%s' % service_name
+
+if not os.path.exists(log_path):  os.makedirs(log_path)
+run('/usr/bin/svlogd', ['-tt', log_path], redirect=False)

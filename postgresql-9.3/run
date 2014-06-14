@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+import logging
+import os
+import sys
+from time import sleep
+
+# import external library
+sys.path.append('/var/service')
+from runit_helper import (
+    MAXIMUM_CRASHES_DELAY,
+    check_crash_quota,
+    check_dependencies,
+    get_logger,
+    run,
+)
+
+service_name = 'postgresql-9.3'
+
+log = get_logger(service_name, logging.INFO)
+
+check_dependencies(service_name, log)
+
+if check_crash_quota(service_name):
+    sleep(MAXIMUM_CRASHES_DELAY)
+    exit(0)
+
+log.info('starting..')
+
+# configurations
+INSTANCE = '9.3'
+CONFIG_PATH = '/etc/postgresql-%s' % INSTANCE
+DATA_PATH = '/var/lib/postgresql/%s/data' % INSTANCE
+CONFIGFILE = '%s/postgresql.conf' % CONFIG_PATH
+EXECUTABLE = '/usr/bin/postgres'
+USER = 'postgres'
+GROUP = 'postgres'
+
+PORT = 5432
+START_TIMEOUT = 10
+OPTIONS = ''
+
+SOCKET_PATH = '/var/run/postgresql'
+SOCKET_FILE = '%s/.s.PGSQL.%s' % (SOCKET_PATH, PORT)
+
+# init
+mandatory_config_files = ['postgresql.conf', 'pg_hba.conf', 'pg_ident.conf']
+for c in os.listdir(CONFIG_PATH):
+    if c in mandatory_config_files:
+        mandatory_config_files.remove(c)
+        os.system('chmod 600 %s/%s' % (CONFIG_PATH, c))
+        os.system('chown %s:%s %s/%s' % (USER, GROUP, CONFIG_PATH, c))
+if len(mandatory_config_files):
+    log.error('files: "%s" not found, hint copy those files from %s to %s' % (
+        ', '.join(mandatory_config_files), DATA_PATH, CONFIG_PATH,
+    ))
+    exit(1)
+
+if not os.path.lexists(SOCKET_PATH):
+    os.makedirs(SOCKET_PATH)
+    os.system('chmod 775 %s' % SOCKET_PATH)
+    os.system('chown %s:%s %s' % (USER, GROUP, SOCKET_PATH))
+
+if os.path.lexists(SOCKET_FILE):
+    log.error('socket conflict. %s already exists' % SOCKET_FILE)
+    exit(1)
+
+if os.path.lexists('%s/postmaster.pid' % DATA_PATH):
+    os.unlink('%s/postmaster.pid' % DATA_PATH)
+
+run(EXECUTABLE, [
+    '-D', DATA_PATH,
+    '-h', '127.0.0.1',
+    '-i',
+    '-p', str(PORT),
+], user=USER, group=GROUP)

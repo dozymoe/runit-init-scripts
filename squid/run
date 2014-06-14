@@ -1,0 +1,48 @@
+#!/usr/bin/env python
+
+import logging
+import os
+import sys
+from time import sleep
+
+# import external library
+sys.path.append('/var/service')
+from runit_helper import (
+    MAXIMUM_CRASHES_DELAY,
+    check_crash_quota,
+    check_dependencies,
+    get_logger,
+    run,
+)
+
+service_name = 'squid'
+
+log = get_logger(service_name, logging.INFO)
+
+check_dependencies(service_name, log)
+
+if check_crash_quota(service_name):
+    sleep(MAXIMUM_CRASHES_DELAY)
+    exit(0)
+
+log.info('starting..')
+
+# configurations
+INSTANCE = 'squid'
+CONFIGFILE = '/etc/squid/%s.conf' % INSTANCE
+EXECUTABLE = '/usr/sbin/squid'
+USER = 'squid'
+GROUP = 'squid'
+
+# init
+if not os.path.lexists(CONFIGFILE):
+    log.error('missing config file %s' % CONFIGFILE)
+    exit(1)
+
+if not os.path.exists('/run/%s' % INSTANCE):
+    d = '/run/%s' % INSTANCE
+    os.makedirs(d)
+    os.system('chmod 750 %s' % d)
+    os.system('chown %s:%s %s' % (USER, GROUP, d)
+
+run(EXECUTABLE, ['-f', CONFIGFILE, '-N'], user=USER, group=GROUP)

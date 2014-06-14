@@ -1,0 +1,62 @@
+dovecot:
+    after:
+        - ldap
+        - mysql
+        - ntp-client
+        - ntpd
+        - postgresql-9.3
+        - saslauthd
+        - slapd
+        - syslog-ng
+    depend:
+        - net.eth0
+monit:
+    after:
+        - dovecot
+        - nginx
+        - php-fpm
+        - postfix
+        - squid
+        - syslog-ng
+mysql:
+    after:
+        - syslog-ng
+nginx:
+    after:
+        - net.eth0
+        - syslog-ng
+ntpd:
+    after:
+        - dnscache
+        - ntp-client
+        - syslog-ng
+    depend:
+        - net.eth0
+postfix:
+    after:
+        - dovecot
+        - spamd
+        - syslog-ng
+    depend:
+        - net.eth0
+postgresql-9.3:
+    after:
+        - syslog-ng
+sshd:
+    after:
+        - syslog-ng
+    depend:
+        - net.eth0
+spamd:
+    after:
+        - postgresql-9.3
+        - syslog-ng
+squid:
+    after:
+        - dnscache
+        - syslog-ng
+    depend:
+        - net.eth0
+vixie-cron:
+    after:
+        - syslog-ng

@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import logging
+import os
+import sys
+from time import sleep
+
+# import external library
+sys.path.append('/var/service')
+from runit_helper import (
+    MAXIMUM_CRASHES_DELAY,
+    check_crash_quota,
+    check_dependencies,
+    get_logger,
+    run,
+)
+
+service_name = 'vixie-cron'
+
+log = get_logger(service_name, logging.INFO)
+
+check_dependencies(service_name, log)
+
+if check_crash_quota(service_name):
+    sleep(MAXIMUM_CRASHES_DELAY)
+    exit(0)
+
+log.info('starting..')
+
+# configurations
+EXECUTABLE = '/usr/sbin/cron'
+USER = 'root'
+GROUP = 'root'
+
+run(EXECUTABLE, ['-n'], user=USER, group=GROUP)

@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+import logging
+import os
+import sys
+from time import sleep
+
+# import external library
+sys.path.append('/var/service')
+from runit_helper import (
+    MAXIMUM_CRASHES_DELAY,
+    check_crash_quota,
+    check_dependencies,
+    get_logger,
+    run,
+)
+
+service_name = 'ntpd'
+
+log = get_logger(service_name, logging.INFO)
+
+check_dependencies(service_name, log)
+
+if check_crash_quota(service_name):
+    sleep(MAXIMUM_CRASHES_DELAY)
+    exit(0)
+
+log.info('starting..')
+
+# configurations
+EXECUTABLE = '/usr/sbin/ntpd'
+USER = 'root'
+GROUP = 'root'
+
+if os.system('%s -n' % EXECUTABLE):
+    log.error('invalid configuration')
+    exit(1)
+
+run(EXECUTABLE, ['-d'], user=USER, group=GROUP)

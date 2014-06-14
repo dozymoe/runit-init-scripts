@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+
+import os
+import sys
+from time import sleep
+
+# import external library
+sys.path.append('/var/service')
+from runit_helper import (
+    MAXIMUM_CRASHES_DELAY,
+    check_crash_quota,
+    run,
+)
+
+service_name = 'syslog-ng'
+
+if check_crash_quota(service_name):
+    sleep(MAXIMUM_CRASHES_DELAY)
+    exit(0)
+
+# configuration
+CONFIGFILE = '/etc/syslog-ng/syslog-ng.conf'
+STATEFILE_DIR = '/var/lib/syslog-ng'
+STATEFILE = STATEFILE_DIR + '/syslog-ng.persist'
+USER = 'root'
+GROUP = 'root'
+
+
+# check configuration first
+err = os.system('/usr/sbin/syslog-ng -s -f %s' % CONFIGFILE)
+if err:
+    print('Configuration error %s' % CONFIGFILE)
+    exit(1)
+
+
+if not os.path.exists(STATEFILE_DIR):
+    os.makedirs(STATEFILE_DIR)
+    os.system('chmod 700 %s' % STATEFILE_DIR)
+    os.system('chown %s:%s %s' % (USER, GROUP, STATEFILE_DIR))
+
+
+run('/usr/sbin/syslog-ng', [
+    '--persist-file', STATEFILE,
+    '--cfgfile', CONFIGFILE,
+    '--foreground',
+], user=USER, group=GROUP)
