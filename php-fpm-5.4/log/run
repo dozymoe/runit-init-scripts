@@ -7,7 +7,7 @@ import sys
 sys.path.append('/var/service')
 from runit_helper import run
 
-service_name = 'php-fpm'
+service_name = 'php-fpm-5.4'
 log_path = '/var/log/%s' % service_name
 
 if not os.path.exists(log_path):  os.makedirs(log_path)

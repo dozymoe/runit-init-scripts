@@ -10,7 +10,7 @@ from runit_helper import (
     update_crash_log,
 )
 
-service_name = 'php-fpm'
+service_name = 'php-fpm-5.4'
 
 log = get_logger(service_name, logging.INFO)
 exit_code = sys.argv[1]

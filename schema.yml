@@ -14,7 +14,7 @@ monit:
     after:
         - dovecot
         - nginx
-        - php-fpm
+        - php-fpm-5.4
         - postfix
         - squid
         - syslog-ng
