@@ -15,7 +15,7 @@ MAXIMUM_CRASHES_PERIODE = 60 # seconds
 MAXIMUM_CRASHES_DELAY   = 15*60 # seconds
 
 SERVICES_META_FILE = '/var/service/schema.yml'
-SERVICES_PATH = '/services'
+SERVICES_PATH = '/service'
 CRASH_LOG_PATH = '/run/runit/crashes'
 
 def check_crash_quota(name, current_time=None):
