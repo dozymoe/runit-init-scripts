@@ -9,3 +9,10 @@ Notes
 
 *   Clone the repository in /var/service.
     There are hardcoded directories (/var/service), I think most of them is about the location of `schema.yml` and `runit_helper.py`.
+
+
+Requirements
+------------
+
+*   PyYaml
+*   python-dateutil

@@ -7,7 +7,7 @@ import os
 from logging.handlers import SysLogHandler
 from yaml import safe_load as yaml_load
 
-FORCE_STOP_TIMEOUT = 10*60 # seconds
+FORCED_STOP_TIMEOUT = 10*60 # seconds
 MAXIMUM_CRASH_HISTORY = 100
 
 MAXIMUM_CRASHES = 5
