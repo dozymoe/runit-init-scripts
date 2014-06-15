@@ -4,7 +4,8 @@ from dateutil.parser import parse as iso2datetime
 import datetime
 import logging
 import os
-from logging.handlers import SysLogHandler
+import types
+from logging.handlers import (RotatingFileHandler, SysLogHandler)
 from yaml import safe_load as yaml_load
 
 FORCED_STOP_TIMEOUT = 10*60 # seconds
@@ -17,6 +18,9 @@ MAXIMUM_CRASHES_DELAY   = 15*60 # seconds
 SERVICES_META_FILE = '/var/service/schema.yml'
 SERVICES_PATH = '/service'
 CRASH_LOG_PATH = '/run/runit/crashes'
+
+SERVICELOG_MAXBYTES = 1024*1024
+SERVICELOG_BACKUPS = 5
 
 def check_crash_quota(name, current_time=None):
     if current_time is None:
@@ -39,7 +43,7 @@ def check_dependencies(name, log):
             exit(1)
         elif output == 'down':
             bail = True
-	    log.debug('starting dependency %s' % s)
+            log.debug('starting dependency %s' % s)
             os.system('sv up %s' % s)
 
     if bail: exit(0)
@@ -75,12 +79,18 @@ def get_needed_services(name):
     return d.get('depend', [])
 
 def get_logger(name, level):
-    syslog = SysLogHandler(address='/dev/log')
+    if os.path.lexists('/dev/log'):
+        handler = SysLogHandler(address='/dev/log',
+                                facility=SysLogHandler.LOG_DAEMON)
+    else:
+        handler = RotatingFileHandler('/var/log/messages',
+                                       maxBytes=SERVICELOG_MAXBYTES,
+                                       backupCount=SERVICELOG_BACKUPS)
     formatter = logging.Formatter('%(name)s: %(levelname)s: %(message)s')
-    syslog.setFormatter(formatter)
+    handler.setFormatter(formatter)
 
     logger = logging.getLogger(name)
-    logger.addHandler(syslog)
+    logger.addHandler(handler)
     logger.setLevel(level)
     return logger
 
@@ -104,6 +114,23 @@ def get_recent_crashes(name, current_time):
             break
     return pruned_data
 
+def is_non_string_iterable(data):
+    try:
+        iter(data) # this should raise TypeError if not
+        return not isinstance(data, types.StringTypes)
+    except TypeError:  pass
+    return False
+
+def pick_one(data):
+    try:
+        iter(data) # this should raise TypeError if not
+        if isinstance(data, types.StringTypes):
+            return data
+        else:
+            return data[0]
+    except TypeError:
+        return data
+
 def run(bin, args, user=None, group=None, redirect=True):
     if redirect:
         STDOUT_FILENO = 1
@@ -113,14 +140,17 @@ def run(bin, args, user=None, group=None, redirect=True):
     binargs = []
     if (user and user != 'root') or (group and group != 'root'):
         if user:
-	    u = user
-	else:
-	    u = 'root'
-	if group:
-	    u = u + ':' + group
+            u = user
+        else:
+            u = 'root'
+        if group:
+            if is_non_string_iterable(group):
+                u = u + ':'.join(group)
+            else:
+                u = u + ':' + group
         binargs.append('/usr/bin/chpst')
-	binargs.append('-u')
-	binargs.append(u)
+        binargs.append('-u')
+        binargs.append(u)
     binargs.append(bin)
     binargs += args
     os.execv(binargs[0], binargs)

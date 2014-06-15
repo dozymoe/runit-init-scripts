@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+
+import logging
+import os
+import sys
+from time import sleep
+
+# import external library
+sys.path.append('/var/service')
+from runit_helper import (
+    MAXIMUM_CRASHES_DELAY,
+    check_crash_quota,
+    check_dependencies,
+    pick_one,
+    run,
+)
+# The functions above are examples and default configuration,
+# you should write your own for custom implementation.
+
+
+# This must be the same as the directory name,
+# it will be used to poll the status of the service using sv.
+service_name = '_skeleton_'
+
+
+# Get a logging backend, if you have /dev/log then
+# syslog will be used otherwise will use
+# logging.handlers.RotatingFileHandler with /var/log/messages.
+log = get_logger(service_name, logging.INFO)
+
+# Exit immediately if there are services that should run
+# before this one but hasn't been `up` yet.
+# Or start services that this one depends on and exit.
+check_dependencies(service_name, log)
+# Continue after the above checks are fulfilled.
+
+# How many times has we tried to restart this service in
+# quick succession and failed?
+if check_crash_quota(service_name):
+    sleep(MAXIMUM_CRASHES_DELAY)
+    exit(0)
+
+# Update the log
+log.info('starting..')
+
+
+# Configurations, these are just normal python variables.
+CONFIGFILE = '/etc/_skeleton_/config.ini'
+EXECUTABLE = '/usr/sbin/_skeleton_'
+USER = 'usr'
+GROUP = 'grp'
+# `Group` can be a list of unix groups, like this:
+GROUP = ['wheel', 'grp']
+
+
+# Sanity checks.
+# Do we have all that's needed to start the service?
+if os.path.exists('/run/%s' % service_name):
+    our_directory = '/run/%s' % service_name
+    log.debug('creating temporary directory for runtime persistence files')
+    os.makedirs(our_directory)
+    os.system('chown %s:%s %s' % (USER, pick_one(GROUP), our_directory))
+
+
+# Run process `/usr/sbin/_skeleton_ -c /etc/_skeleton_/config.ini`
+# and set to replace this running python script using os.execv().
+run(EXECUTABLE, ['-c', CONFIGFILE])
+
+# Run process `/usr/bin/chpst -u usr:grp /usr/sbin/_skeleton_ -c /etc/_skeleton_/config.ini`
+# and set to replace this running python script using os.execv().
+run(EXECUTABLE, ['-c', CONFIGFILE], user=USER, group=GROUP)
+
+# Same as above but doesn't redirect stderr to stdout, redirection is needed for
+# svlogd, see log/run.
+run(EXECUTABLE, ['-c', CONFIGFILE], user=USER, group=GROUP, redirection=False)

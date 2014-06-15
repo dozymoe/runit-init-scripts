@@ -1,0 +1,10 @@
+service_1:
+    after:
+        - service_2
+        - service_3
+    depend:
+        - service_4
+        - service_5
+service_2:
+    after:
+        - service 4
