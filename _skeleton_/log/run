@@ -19,5 +19,5 @@ LOG_PATH = '/var/log/%s' % service_name
 
 
 # Run svlogd, runit logger program.
-if not os.path.exists(log_path):  os.makedirs(log_path)
+if not os.path.exists(LOG_PATH):  os.makedirs(LOG_PATH)
 run('/usr/bin/svlogd', ['-tt', LOG_PATH], redirect=False)
