@@ -11,6 +11,7 @@ from runit_helper import (
     MAXIMUM_CRASHES_DELAY,
     check_crash_quota,
     check_dependencies,
+    get_logger,
     pick_one,
     run,
 )
