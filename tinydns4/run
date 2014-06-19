@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+
+import logging
+import os
+import sys
+from time import sleep
+
+# import external library
+sys.path.append('/var/service')
+from runit_helper import (
+    MAXIMUM_CRASHES_DELAY,
+    check_crash_quota,
+    check_dependencies,
+    get_logger,
+    run,
+)
+
+service_name = 'tinydns4'
+
+log = get_logger(service_name, logging.INFO)
+
+check_dependencies(service_name, log)
+
+if check_crash_quota(service_name):
+    sleep(3)
+    exit(0)
+
+log.info('starting..')
+
+STDOUT_FILENO = 1
+STDERR_FILENO = 2
+os.dup2(STDOUT_FILENO, STDERR_FILENO)
+
+ARGS = [
+    '/usr/bin/envuidgid',
+    'tinydns',
+    '/usr/bin/envdir', '/var/service/%s/env' % service_name,
+    '/usr/bin/softlimit', '-d300000',
+    '/usr/bin/tinydns',
+]
+os.execv(ARGS[0], ARGS)
+#!/bin/sh
+#exec 2>&1
+#exec envuidgid tinydns envdir ./env softlimit -d300000 /usr/bin/tinydns

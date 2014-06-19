@@ -1,3 +1,10 @@
 *.pyc
 */supervise
 */log/supervise
+
+axfrdns/tcp*
+axfrdns/env/IP
+axfrdns/log/status
+tinydns4/env/IP
+tinydns4/log/status
+tinydns4/root/data*
