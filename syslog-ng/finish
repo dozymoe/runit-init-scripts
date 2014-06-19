@@ -10,8 +10,8 @@ from runit_helper import (
 
 service_name = 'syslog-ng'
 
-exit_code = sys.argv[1]
-status = sys.argv[2]
+exit_code = int(sys.argv[1])
+status = int(sys.argv[2])
 
 if exit_code == 111 and status == 0:
     print('runsv cannot start ./run')

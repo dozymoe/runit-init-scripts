@@ -14,8 +14,8 @@ from runit_helper import (
 service_name = 'monit'
 
 log = get_logger(service_name, logging.INFO)
-exit_code = sys.args[1]
-status = sys.args[2]
+exit_code = int(sys.args[1])
+status = int(sys.args[2])
 
 if exit_code == 111 and status == 0:
     log.error('runsv cannot start ./run')
